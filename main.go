@@ -2,57 +2,54 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"github.com/PuerkitoBio/goquery"
+	_ "github.com/PuerkitoBio/goquery"
 	"log"
 	"net/http"
-	"os"
 )
 
-func main() {
-	url := "https://www.digitec.ch/search?q=maus"
-	code := getCode(url)
+//  https://www.youtube.com/watch?v=mS74M-rnc90 - Tutorial WebScapper Ebay
 
-	file, err := os.Create("htmlCode.txt")
-	if err != nil {
-		log.Fatal(err)
+func getHtml(url string) *http.Response {
+	response, error := http.Get(url)
+	checkErr(error)
+
+	if response.StatusCode > 400 {
+		fmt.Println("Status Code:", response.StatusCode)
 	}
-	defer file.Close()
-	file.WriteString(code)
-	println("HTML Code was written to file")
 
-	/*
-		stringStart := strings.Index(code, "class=\"sc-qlvix8-0 dCvedB\" aria-label=")
-		if stringStart == -1 {
-			fmt.Println("No Element Found")
-			os.Exit()
-		}
-		stringStart += 2
-
-		stringEnd := strings.Index(code, "/"
-		"")
-		if stringEnd == -1 {
-			fmt.Println("No Element Found")
-			os.Exit()
-		}
-	*/
+	if response.StatusCode != 200 {
+		log.Fatalf("status code error: %d %s", response.StatusCode, response.Status)
+	}
+	return response
 }
 
-func getCode(url string) string {
+func scrapeHtml(doc *goquery.Document) {
+	doc.Find("div.sc-1f6e68i-0.dkAAXO>article.panelProduct").Each(func(index int, item *goquery.Selection) {
+		a := item.Find("a.product--title")
+		title := a.Text()
+		fmt.Println(title) //Why the fuck gits kei HTML Code sondern e pointer uus??
+	})
+	fmt.Println(*doc)
+	return
+}
 
-	fmt.Printf("HTML code of %s ...\n", url)
-	resp, err := http.Get(url)
-	// handle the error if there is one
-	if err != nil {
-		panic(err)
+func main() {
+
+	url := "https://www.digitec.ch/search?q=maus"
+
+	response := getHtml(url)
+	defer response.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(response.Body)
+	println(doc)
+	checkErr(err)
+
+	scrapeHtml(doc)
+
+}
+func checkErr(error error) {
+	if error != nil {
+		fmt.Println(error)
 	}
-	// do this now so it won't be forgotten
-	defer resp.Body.Close()
-	// reads html as a slice of bytes
-	html, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	// show the HTML code as a string %s
-	result := html
-	return string(result)
 }
