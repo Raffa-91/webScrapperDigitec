@@ -11,8 +11,8 @@ import (
 //  https://www.youtube.com/watch?v=mS74M-rnc90 - Tutorial WebScapper Ebay
 
 func getHtml(url string) *http.Response {
-	response, error := http.Get(url)
-	checkErr(error)
+	response, err := http.Get(url)
+	checkErr(err)
 
 	if response.StatusCode > 400 {
 		fmt.Println("Status Code:", response.StatusCode)
@@ -30,8 +30,6 @@ func scrapeHtml(doc *goquery.Document) {
 		title := a.Text()
 		fmt.Println(title) //Why the fuck gits kei HTML Code sondern e pointer uus??
 	})
-	fmt.Println(*doc)
-	return
 }
 
 func main() {
@@ -48,8 +46,8 @@ func main() {
 	scrapeHtml(doc)
 
 }
-func checkErr(error error) {
-	if error != nil {
-		fmt.Println(error)
+func checkErr(err error) {
+	if err != nil {
+		fmt.Println(err)
 	}
 }
