@@ -38,20 +38,22 @@ func saveToCSV(result []string) {
 	writer.Flush()
 }
 
-func scrapeHtml(doc *goquery.Document) string {
-	result := ""
+func scrapeHtml(doc *goquery.Document) []string {
+	var result []string
+
 	doc.Find(".product-wrapper").Each(func(index int, item *goquery.Selection) {
-		a := item.Find("a")
+		a := item.Find("h2 a")
 		price := item.Find(".price.small")
-		title := strings.Trim(a.Text(), "Marktverfügbarkeit prüfen"+"Warenkorb")
-		priceValue := strings.Trim(price.Text(), "Warenkorb")
+		title := strings.TrimSpace(strings.Trim(a.Text(), "Marktverfügbarkeit prüfen"+"Warenkorb"))
+		priceValue := strings.TrimSpace(strings.Trim(price.Text(), "Warenkorb"))
 		fmt.Println("Titel:")
-		fmt.Printf("%+v", title)
+		fmt.Printf("%+v \n", title)
 		fmt.Println("Preis:")
-		fmt.Printf("%+v", priceValue)
-		result := []string{title, priceValue}
-		saveToCSV(result)
+		fmt.Printf("%+v \n", priceValue)
+		result = append(result, title, priceValue)
+
 	})
+	saveToCSV(result)
 	return result
 }
 
@@ -70,9 +72,9 @@ func checkErr(err error) {
 	}
 }
 
-func loopOver(command string) string {
+func loopOver(command string) []string {
 
-	result := ""
+	var result []string
 	input := command
 
 	for i := 1; i <= 5; i++ {
@@ -89,7 +91,7 @@ func loopOver(command string) string {
 
 		checkErr(err)
 
-		result += scrapeHtml(doc)
+		result = append(result, scrapeHtml(doc)...)
 	}
 	return result
 }
