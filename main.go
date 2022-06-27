@@ -72,27 +72,32 @@ func checkErr(err error) {
 	}
 }
 
-func loopOver(command string) []string {
+func loopOver2(page int, command string) []string {
 
 	var result []string
-	input := command
+	url := fmt.Sprintf("https://www.mediamarkt.ch/de/search.html?query=%s&searchProfile=onlineshop&channel=mmchde&page=%d", command, page)
 
-	for i := 1; i <= 5; i++ {
+	response := getHtml(url)
+	defer response.Body.Close()
 
-		fmt.Println(i)
-		url := fmt.Sprintf("https://www.mediamarkt.ch/de/search.html?query=%s&searchProfile=onlineshop&channel=mmchde&page=%d", input, i)
+	doc, err := goquery.NewDocumentFromReader(response.Body)
 
-		response := getHtml(url)
-		defer response.Body.Close()
+	fmt.Println(&doc)
+	checkErr(err)
 
-		doc, err := goquery.NewDocumentFromReader(response.Body)
+	result = append(result, scrapeHtml(doc)...)
+	return result
 
-		fmt.Println(&doc)
+}
 
-		checkErr(err)
-
-		result = append(result, scrapeHtml(doc)...)
-	}
+func loopOver(command string) []string {
+	var result []string
+	//Markenbezeichnungen in "command" generienen teilweise Unterseiten welche nicht gelesen werden können
+	go loopOver2(1, command)
+	go loopOver2(2, command)
+	go loopOver2(3, command)
+	go loopOver2(4, command)
+	go loopOver2(5, command)
 	return result
 }
 
@@ -102,7 +107,7 @@ func PrintMenue() {
 #******** Webscapper Mediamarkt **********
 #********* Wähle eine Option *************
 # 1. Suchen
-# 2. Export
+# 2. Export (Beta)
 #
 # q. Beenden
 ##########################################
