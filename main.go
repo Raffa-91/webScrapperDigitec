@@ -43,13 +43,13 @@ func scrapeHtml(doc *goquery.Document) []string {
 	doc.Find(".product-wrapper").Each(func(index int, item *goquery.Selection) {
 		a := item.Find("h2 a")
 		price := item.Find(".price.small")
-		title := a.Text()
-		priceValue := price.Text()
+		title := strings.TrimSpace(a.Text())
+		priceValue := strings.TrimSpace(price.Text())
 		fmt.Println("Titel:")
 		fmt.Printf("%+v \n", title)
 		fmt.Println("Preis:")
 		fmt.Printf("%+v \n", priceValue)
-		result = append(result, title, priceValue)
+		result = append(result, title, priceValue, "\n")
 	})
 
 	return result
