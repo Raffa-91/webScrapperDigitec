@@ -4,18 +4,16 @@ import (
 	"bufio"
 	"encoding/csv"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
-	_ "github.com/PuerkitoBio/goquery"
 	_ "go/printer"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
-)
+	"sync"
 
-//  https://www.youtube.com/watch?v=mS74M-rnc90 - Tutorial WebScapper Ebay
+	"github.com/PuerkitoBio/goquery"
+)
 
 func getHtml(url string) *http.Response {
 	response, err := http.Get(url)
@@ -30,6 +28,7 @@ func getHtml(url string) *http.Response {
 	}
 	return response
 }
+
 func saveToCSV(result []string) {
 	file, error := os.Create("results.csv")
 	checkErr(error)
@@ -44,21 +43,19 @@ func scrapeHtml(doc *goquery.Document) []string {
 	doc.Find(".product-wrapper").Each(func(index int, item *goquery.Selection) {
 		a := item.Find("h2 a")
 		price := item.Find(".price.small")
-		title := strings.TrimSpace(strings.Trim(a.Text(), "Marktverfügbarkeit prüfen"+"Warenkorb"))
-		priceValue := strings.TrimSpace(strings.Trim(price.Text(), "Warenkorb"))
+		title := a.Text()
+		priceValue := price.Text()
 		fmt.Println("Titel:")
 		fmt.Printf("%+v \n", title)
 		fmt.Println("Preis:")
 		fmt.Printf("%+v \n", priceValue)
 		result = append(result, title, priceValue)
-
 	})
-	saveToCSV(result)
+
 	return result
 }
 
 func main() {
-
 	ClearTerminal()
 	PrintMenue()
 	for true {
@@ -72,9 +69,9 @@ func checkErr(err error) {
 	}
 }
 
-func loopOver2(page int, command string) []string {
+func searchThroughWebsite(page int, command string, result *[]string, wg *sync.WaitGroup) {
+	defer wg.Done()
 
-	var result []string
 	url := fmt.Sprintf("https://www.mediamarkt.ch/de/search.html?query=%s&searchProfile=onlineshop&channel=mmchde&page=%d", command, page)
 
 	response := getHtml(url)
@@ -85,19 +82,25 @@ func loopOver2(page int, command string) []string {
 	fmt.Println(&doc)
 	checkErr(err)
 
-	result = append(result, scrapeHtml(doc)...)
-	return result
-
+	*result = append(*result, scrapeHtml(doc)...)
 }
 
 func loopOver(command string) []string {
 	var result []string
+
+	var wg sync.WaitGroup
+	wg.Add(5)
 	//Markenbezeichnungen in "command" generienen teilweise Unterseiten welche nicht gelesen werden können
-	go loopOver2(1, command)
-	go loopOver2(2, command)
-	go loopOver2(3, command)
-	go loopOver2(4, command)
-	go loopOver2(5, command)
+	go searchThroughWebsite(1, command, &result, &wg)
+	go searchThroughWebsite(2, command, &result, &wg)
+	go searchThroughWebsite(3, command, &result, &wg)
+	go searchThroughWebsite(4, command, &result, &wg)
+	go searchThroughWebsite(5, command, &result, &wg)
+	wg.Wait()
+
+	// Save results into a CSV File
+	saveToCSV(result)
+
 	return result
 }
 
@@ -137,16 +140,6 @@ func ClearTerminal() {
 	c.Run()
 }
 
-func toInt(info string) int {
-	aInt, _ := strconv.Atoi(info)
-	return aInt
-}
-
-func toStr(info int) string {
-	aStr := strconv.Itoa(info)
-	return aStr
-}
-
 func parseCommand(input string) {
 	switch {
 	case input == "1":
@@ -157,6 +150,8 @@ func parseCommand(input string) {
 		break
 	case input == "2":
 		ClearTerminal()
+		// Sample für (Beta)Export
+		loopOver("Tastatur")
 		PrintMenue()
 		break
 	}
